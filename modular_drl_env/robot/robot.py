@@ -100,8 +100,9 @@ class Robot(ABC):
 
         # in inverse kinmematics mode limits the maximum desired movement per step to this
         # note: independent of this, movements will still be limited by maximum joint velocities and joint position limits
-        self.xyz_delta = ik_xyz_delta
-        self.rpy_delta = ik_rpy_delta
+        self.delta_scale = 10
+        self.xyz_delta = ik_xyz_delta*self.delta_scale
+        self.rpy_delta = ik_rpy_delta*self.delta_scale
 
         # for control mode 3
         # the amount of deviation from the set joint target that is allowed
