@@ -384,10 +384,11 @@ class qual:
         data = pd.read_csv(self.trj_pth)
         # for col in data.columns:
         #     print(col)
-        episodes = data['episode'].values
-        comp_time = data['cpu_time'].values
+        episodes = data['episodes'].values
+        comp_time = data['cpu_time_full'].values
         exec_time = data['sim_time'].values
-        ee_pos = data['position_link_7_ur5_1'].values
+        #ee_pos = data['position_link_7_ur5_1'].values
+        ee_pos = data['position_ee_link_ur5_1'].values
         # print(len(comp_time))
         # max_el = self.count_elems(episodes)
 
@@ -448,7 +449,7 @@ class qual:
             ym = self.unify_trajs(y, max_el)
             zm = self.unify_trajs(z, max_el)
 
-            # print(x_av.shape, xm.shape, ym.shape, zm.shape, max_el)
+            print(x_av.shape, xm.shape, ym.shape, zm.shape, max_el)
 
             x_av = np.add(x_av, xm)
             y_av = np.add(y_av, ym)
@@ -536,7 +537,7 @@ class qual:
         # return 0
         unique, counts = np.unique(arr, return_counts=True)
         print(unique,counts)
-
+    """
     # adjust dimensions of trj arrays
     def unify_trajs(self, trj, max_el):
         modified_trj = trj
@@ -550,6 +551,16 @@ class qual:
             n += 1
 
         return modified_trj
+    """    
+    def unify_trajs(self, trj, max_el):
+        if len(trj) < max_el:
+            last_value = trj[-1]
+            padding = np.full(max_el - len(trj), last_value)
+            trj = np.concatenate((trj, padding), axis=0)
+        else:
+            trj = trj[:max_el]
+        return trj
+         
 
 def makeplot_qual(eval_path, robot):
 
@@ -942,20 +953,23 @@ if __name__ == "__main__":
     planner_stl["NC-RRT"] = "tab:purple"
     planner_stl["RRTs"] = "tab:red"
     planner_stl["DRL-AmirV9"] = "tab:gray"
+    planner_stl["Real"] = "tab:blue"
+    planner_stl["Simul"] = "tab:orange"
 
     plt_cfg = {}
     plt_cfg["ql"] = 2
     plt_cfg["qt"] = 0
     # plt_cfg["planner"] = "DRL,DRL-JV,RRT,NC-RRT,DRL-AmirV9"
     # plt_cfg["planner"] = "NC-RRT,DRL,DRL-AmirV9"
-    plt_cfg["planner"] = "DRL-IK,DRL-JV"
+    #plt_cfg["planner"] = "DRL-IK,DRL-JV"
+    plt_cfg["planner"] = "Real"
 
     # # Ur 5 ----------------------------------------------------------
     # ur5_1 = makeplot_qual("../ur5/trajectory/testcase1/", "ur5_1")
     # ur5_2 = makeplot_qual("../ur5/trajectory/testcase2/", "ur5_2")
     # ur5_3 = makeplot_qual("../ur5/trajectory/testcase3/", "ur5_3")
 
-    ur5_1 = makeplot_qual("experiments/table_exp1/", "ur5_new")
+    ur5_1 = makeplot_qual("experiments/Jihoon/", "Jihoon")
 
 
     # # Kuka ----------------------------------------------------------

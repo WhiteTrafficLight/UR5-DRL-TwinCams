@@ -51,7 +51,7 @@ env:
     sim_step: 0.00416666666  #0.01666666666 
     sim_steps_per_env_step: 4
   robots:
-    - type: "UR5_Gripper" 
+    - type: "UR5" 
       config:
         name: "ur5_1"
         base_position: [0, 0, 0.01]

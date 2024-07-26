@@ -64,7 +64,7 @@ JOINT_NAMES = [
 class listener_node_one:
     def __init__(self, action_rate, control_rate, num_voxels, point_cloud_static):
         # yaml config file
-        self.config_path = '/home/moga/Desktop/IR-DRL/Sim2Real/config_data/config.yaml'
+        self.config_path = '/home/ur5/Jihoon/IR-DRL/Sim2Real/config_data/config.yaml'
         self.config = self.load_config(self.config_path)
 
         # variables for logging real clock time
@@ -192,7 +192,7 @@ class listener_node_one:
         
         # custom sim2real config parsen
         #_, env_config = parse_config("/home/moga/Desktop/IR-DRL/configs/S2R/obstsensor_trajectory_PPO.yaml", False) #False = kein Training
-        _, env_config = parse_config("/home/moga/Desktop/IR-DRL/configs/S2R/s2rexperiment_benno_config_voxels.yaml", False)
+        _, env_config = parse_config("/home/ur5/Jihoon/IR-DRL/configs/s2rexperiment_default_config.yaml", False)
         env_config["env_id"] = 0
         # mit der config env starten
         self.env = ModularDRLEnv(env_config)
@@ -213,7 +213,7 @@ class listener_node_one:
 
         # load DRL model
         #self.model = PPO.load("/home/moga/Desktop/IR-DRL/models/weights/model_interrupt.zip")  # trajectory
-        self.model = PPO.load("/home/moga/Desktop/IR-DRL/models/weights/model_trained_voxels.zip")  # no trajectory
+        self.model = PPO.load("/home/ur5/Jihoon/IR-DRL/models/weights/PPO_s2rexperiment/model_149040000_steps.zip")  # no trajectory
         
         # load RRT planner
         self.planner = BiRRT(self.virtual_robot, padding=False)
@@ -240,7 +240,7 @@ class listener_node_one:
         rospy.Subscriber("/joint_states", JointState, self.cbGetJoints)
         sleep(1)
         print("[Listener] Started callback for raw pointcloud data")
-        rospy.Subscriber("/camera/depth/color/points", PointCloud2, self.cbGetPointcloud)
+        rospy.Subscriber("/camera/depth/points", PointCloud2, self.cbGetPointcloud)
         sleep(1)
         print("[Listener] Started callback for DRL inference")
         rospy.Timer(rospy.Duration(secs=1/action_rate), self.cbAction)
@@ -290,7 +290,7 @@ class listener_node_one:
                 # overwrite goal
                 self.env.world.position_targets[0] = self.goal
                 
-                self.env.world.joints_targets[0] = self.q_goal[:5]  # TODO: might cause problems with unorthodox number/order of controlled joints
+                #self.env.world.joints_targets[0] = self.q_goal[:5]  # TODO: might cause problems with unorthodox number/order of controlled joints
                 self.virtual_robot.goal.on_env_reset(0)
                 pyb_u.toggle_rendering(False)
                 self.virtual_robot.goal.build_visual_aux()
@@ -575,6 +575,74 @@ class listener_node_one:
         # set mode to planner
         self.mode = False
         self.virtual_robot.use_physics_sim = False
+        
+        inp = input("[cbControl] Input target position (xyz) with a space between each one: \n")
+        inp = inp.split(" ")
+        try:
+            inp = np.array([float(ele) for ele in inp])
+        except ValueError:
+            print("[cbControl] input in wrong format, try again!")
+            self.mode = True
+            self.virtual_robot.use_physics_sim = True
+            return
+        
+        # check if inverse kinematics can actually reach the xyz position
+        tmp_goal = np.array(inp)
+        self.virtual_robot.position_rotation_sensor.update(0)
+        self.virtual_robot.joints_sensor.update(0)
+        
+        # check for collision in starting position
+        pyb_u.perform_collision_check()
+        pyb_u.get_collisions()
+        if pyb_u.collision:
+            print("[cbControl] current position of robot is in collision in simulation! Try again or check the camera/voxelization if the problem persists.")
+            self.mode = True
+            self.virtual_robot.use_physics_sim = True
+            return
+        
+        q_goal = self.virtual_robot._solve_ik(tmp_goal, None)
+        if q_goal is None:
+            print("[cbControl] Could not find a valid joint configuration for the given position.")
+            self.mode = True
+            self.virtual_robot.use_physics_sim = True
+            return
+        
+        self.virtual_robot.moveto_joints(q_goal, False, self.virtual_robot.all_joints_ids)
+        
+        # check for collision in target position
+        pyb_u.perform_collision_check()
+        pyb_u.get_collisions()
+        if pyb_u.collision:
+            print("[cbControl] target position is in collision in simulation! Try again or check the camera/voxelization if the problem persists..")
+            self.mode = True
+            self.virtual_robot.use_physics_sim = True
+            return
+        
+        # call the planner to plan a collision free route to the target
+        self.virtual_robot.moveto_joints(self.joints, False, self.virtual_robot.all_joints_ids)
+        self.trajectory = self.planner.plan(q_goal, self.env.world.active_objects)
+        if self.trajectory is None:
+            print("[cbControl] Planner failed, try again!")
+            self.mode = True
+            self.virtual_robot.use_physics_sim = True
+            return
+        
+        print("trajectory:", len(self.trajectory))
+        print("letzter eintrag trajectory:", self.trajectory[-1])
+        self.virtual_robot.control_mode = 1
+        self.sim_step = 0
+        self.real_step = 0
+        self.virtual_robot.world.position_targets[0] = np.array([1,2,3])
+        self.trajectory_idx = 0
+        self.q_goal = q_goal 
+        self.goal = tmp_goal  # some nonsense goal to set the mutex 
+
+
+    """
+    def _control_planner(self):
+        # set mode to planner
+        self.mode = False
+        self.virtual_robot.use_physics_sim = False
         inp = input("[cbControl] Input six target joint angles with a space between each one: \n")
         inp = inp.split(" ")
         try:
@@ -618,7 +686,8 @@ class listener_node_one:
         self.virtual_robot.world.position_targets[0] = np.array([1,2,3])
         self.trajectory_idx = 0
         self.q_goal = inp 
-        self.goal = np.array([1,2,3])  # some nonsense goal to set the mutex 
+        self.goal = np.array([1,2,3])  # some nonsense goal to set the mutex
+    """     
 
     def _control_calibrate(self):
         was_static = self.point_cloud_static
@@ -704,17 +773,17 @@ class listener_node_one:
     
     def cbGetPointcloud(self, data):
         np_data = ros_numpy.numpify(data)
-        points = np.ones((np_data.shape[0], 4))
+        points = np.ones((np_data.shape[0]*np_data.shape[1], 4))
         if len(points) == 0:
             print("[cbGetPointcloud] No point cloud data received, check the camera and its ROS program!")
-            return
-        points[:, 0] = np_data['x']
-        points[:, 1] = np_data['y']
-        points[:, 2] = np_data['z']
-        color_floats = np_data['rgb']  # float value that compresses color data
+            return    
+        points[:, 0] = np_data['x'].flatten()
+        points[:, 1] = np_data['y'].flatten()
+        points[:, 2] = np_data['z'].flatten()
+        color_floats = np.ones((points.shape[0],3))  # float value that compresses color data
         # convert float values into 3-vector with RGB intensities, normalized to between 0 and 1
-        color_floats = np.ascontiguousarray(color_floats)
-        color_floats = (color_floats.view(dtype=np.uint8).reshape(color_floats.shape + (4,))[:,:3].astype(np.float64)) / 255
+        #color_floats = np.ascontiguousarray(color_floats)
+        #color_floats = (color_floats.view(dtype=np.uint8).reshape(color_floats.shape + (4,))[:,:3].astype(np.float64)) / 255
         
         # transfer data into class variables where other callbacks can get them
         self.data_set_guard = True
@@ -1102,6 +1171,8 @@ class listener_node_one:
 
 def statistical_outlier_removal(pcd, n_neighbors=20, std_ratio=2.0):
     points = np.asarray(pcd.points)  # Convert the points to a numpy array
+
+    n_neighbors = min(n_neighbors,points.shape[0])
 
     # Calculate the distances and indices using sklearn's NearestNeighbors
     neigh = NearestNeighbors(n_neighbors=n_neighbors)

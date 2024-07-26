@@ -1,7 +1,7 @@
 run:
   algorithm:
-    load_model: False  
-    model_path: ""  
+    load_model: True  
+    model_path: "models/weights/PPO_s2rexperiment/model_149040000_steps.zip"  
     type: "PPO"
   train:
     num_envs : 24  
@@ -35,7 +35,7 @@ env:
         base_orientation: [0, 0, -180]
         resting_angles: [-180, -45, -90, -135, 90, 0]
         control_mode: 2
-        self_collision: True
+        self_collision: False
         controlled_joints: ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint", "wrist_2_joint"]
       sensors:
         - type: "Obstacle"
@@ -68,6 +68,13 @@ env:
           dist_threshold_overwrite: 0.05
           reward_success: 500
   world:
-    type: "S2RExperiment"
+    type: "Generated"
     config:
-      max_num_obstacles: 1
+      workspace_boundaries: [-2, 2, -2, 2, -1, 5]
+      start_override: 
+      obstacles:
+      - type: "box"
+        position: [0.25, 0.25, -0.5]
+        rotation: [0, 0, 0]
+        params:
+          halfExtents: [0.3, 0.3, 0.5]
