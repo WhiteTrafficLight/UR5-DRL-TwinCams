@@ -8,6 +8,42 @@ from matplotlib.ticker import MaxNLocator
 import random
 from operator import truediv
 
+def standardize_log_format(data):
+    # Ensure the first column (index) is included
+    data.reset_index(drop=True, inplace=True)
+
+    # Define the column mapping
+    column_mapping = {
+        'episodes': 'episode',
+        'cpu_time_full': 'cpu_time',
+        'position_ee_link_ur5_1': 'position_link_7_ur5_1',
+        'velocity_ee_link_ur5_1': 'velocity_link_7_ur5_1',
+        'rotation_ee_link_ur5_1': 'rotation_link_7_ur5_1',
+        # Add any other necessary mappings here
+    }
+
+    # Rename columns to match the expected format
+    data.rename(columns=column_mapping, inplace=True)
+
+    # Define the required columns in the standard format
+    required_columns = [
+        '','episode', 'is_success', 'step', 'success_rate', 'out_of_bounds_rate', 'timeout_rate',
+        'collision_rate', 'sim_time', 'cpu_time', 'action_cpu_time_ur5_1', 'joints_angles_ur5_1',
+        'joints_velocities_ur5_1', 'joints_sensor_cpu_time_ur5_1', 'position_link_7_ur5_1',
+        'velocity_link_7_ur5_1', 'rotation_link_7_ur5_1', 'position_rotation_sensor_cpu_time_ur5_1','shaking_ur5_1'
+        'reward_ur5_1', 'distance_ur5_1', 'distance_threshold_ur5_1',
+    ]
+
+    # Add missing columns with default values if they are not present in the data
+    for column in required_columns:
+        if column not in data.columns:
+            data[column] = 0
+
+    # Reorder columns to match the standard format
+    data = data[required_columns]
+
+    return data
+
 
 class qual:
     def __init__(self, pth, planner, single="True"):
@@ -379,106 +415,96 @@ class qual:
         self.evaluations["tr_av_" + self.planner] = [x_av, y_av, z_av]
         return self.evaluations
 
-
     def plot_trj(self):
         data = pd.read_csv(self.trj_pth)
-        # for col in data.columns:
-        #     print(col)
-        episodes = data['episodes'].values
-        comp_time = data['cpu_time_full'].values
+        data = standardize_log_format(data)
+        # Debugging: Print the shape of the DataFrame
+        #print(f"Data shape after standardizing: {data.shape}")
+        
+        episodes = data['episode'].values
+        comp_time = data['cpu_time'].values
         exec_time = data['sim_time'].values
-        #ee_pos = data['position_link_7_ur5_1'].values
-        ee_pos = data['position_ee_link_ur5_1'].values
-        # print(len(comp_time))
-        # max_el = self.count_elems(episodes)
+        ee_pos = data['position_link_7_ur5_1'].values
 
-        # count nr of occurences of each episode 
         unique, counts = np.unique(episodes, return_counts=True)
-        # minimum ep occurance is max size for av arrays
-        max_el = min(counts)
+        max_el = max(counts)
+        
+        # Debugging: Print the value of max_el
+        #print(f"max_el value: {max_el}")
+
+        if max_el == 0:
+            print("Error: max_el is 0. No episodes found.")
+            return
 
         x_av = np.zeros(max_el)
         y_av = np.zeros(max_el)
         z_av = np.zeros(max_el)
 
-        n_episodes = episodes[len(episodes)-1]
+        n_episodes = episodes[len(episodes)-1]+1
         runtime = np.zeros(n_episodes)
         tr_len = np.zeros(n_episodes)
         ee_v = np.zeros(n_episodes)
         smoothness = np.zeros(n_episodes)
 
-        # file_id = np.zeros(n_runs)
-        # global ax
         if plt_cfg["ql"] == 2:
             global ax
         elif plt_cfg["ql"] == 1:
             ax = plt.axes(projection="3d")
 
         n = 0
-        # print(arr)
-        # print(ee_pos)
-        for run in unique: 
-            if run == 8:
-                continue
-            # txt_arr = np.loadtxt(self.trj_pth + f)
-            # print(np.where(episodes==run)[0][0])
-            idx1 = np.where(episodes==run)[0][0]
-            idx2 = len(np.where(episodes==run)[0]) + idx1 - 1
-            # print(idx1,idx2)
-
-            curr_comp_time = round(np.sum(comp_time[idx1:idx2]),2) #- comp_time[idx1]
-            curr_exec_time = round(exec_time[idx2]-exec_time[idx1],2) #- comp_time[idx1]
-            # print(curr_exec_time,curr_comp_time)
-            # ts = txt_arr[:, 0:1].flatten()
-            # # print(f)
-            # duration = ts[len(ts) - 1] - ts[0]
-            # runtime[n] = duration
-            # # print(duration)
-
-            # ee pos
-            curr_ee_pos = ee_pos[idx1:idx2]
-            x,y,z = self.get_ee_xyz(curr_ee_pos)
-            # x = txt_arr[:, 1:2].flatten()
-            # y = txt_arr[:, 2:3].flatten()
-            # z = txt_arr[:, 3:4].flatten()
-            # ee vel
-            # ev = txt_arr[:, 8:9].flatten()
-
+        for run in unique:
+            #if run == 8:
+            #    continue
             
+            idx1 = np.where(episodes == run)[0][0]
+            idx2 = len(np.where(episodes == run)[0]) + idx1 - 1
+            if idx1 == idx2:
+                continue
+
+            curr_comp_time = round(np.sum(comp_time[idx1:idx2]), 2)
+            curr_exec_time = round(exec_time[idx2] - exec_time[idx1], 2)
+
+            curr_ee_pos = ee_pos[idx1:idx2]
+            x, y, z = self.get_ee_xyz(curr_ee_pos)
             xm = self.unify_trajs(x, max_el)
             ym = self.unify_trajs(y, max_el)
             zm = self.unify_trajs(z, max_el)
-
-            print(x_av.shape, xm.shape, ym.shape, zm.shape, max_el)
 
             x_av = np.add(x_av, xm)
             y_av = np.add(y_av, ym)
             z_av = np.add(z_av, zm)
 
-            dist_array = (
-                (x[:-1] - x[1:]) ** 2
-                + (y[:-1] - y[1:]) ** 2
-                + (z[:-1] - z[1:]) ** 2
-            )
-            print(run)
-            curr_smoothness = self.comp_smoothness(x,y,z)
+            dist_array = ( (x[:-1] - x[1:]) ** 2 + (y[:-1] - y[1:]) ** 2 + (z[:-1] - z[1:]) ** 2 )
+            curr_smoothness = self.comp_smoothness(x, y, z)
             curr_path_length = np.sum(np.sqrt(dist_array))
-            smoothness[n] = curr_smoothness
-            # tr_len[n] = curr_path_length
-            # ee_v[n] = np.mean(ev)
+            tr_len[run] = curr_path_length
+            smoothness[run] = curr_smoothness
+            runtime[run] = curr_exec_time
 
-            # # file_id[n] = int(f.replace('.txt',''))
             if plt_cfg["ql"] > 0:
                 ax.plot3D(x, y, z, color=planner_stl[self.planner], alpha=0.2)
 
             n += 1
 
-        n_runs = unique[len(unique)-1]
-        x_av /= n_runs
-        y_av /= n_runs
-        z_av /= n_runs
+        if n == 0:
+            print("Error: No valid runs found.")
+            return
 
-        # get initial and goal position
+        n_runs = unique[len(unique)-1]
+        #x_av /= n_runs
+        #y_av /= n_runs
+        #z_av /= n_runs
+        x_av /= n
+        y_av /= n
+        z_av /= n
+
+        # Debugging: Print the shape of x_av
+        #print(f"x_av shape: {x_av.shape}")
+
+        if len(x_av) == 0:
+            print("Error: x_av is empty after averaging.")
+            return
+
         sx = x_av[0]
         sy = y_av[0]
         sz = z_av[0]
@@ -487,41 +513,21 @@ class qual:
         ey = y_av[max_el - 1]
         ez = z_av[max_el - 1]
 
-        # plot avg trajectory
-        print(planner_stl)
+
         if plt_cfg["ql"] > 0:
-            ax.plot3D(
-                x_av,
-                y_av,
-                z_av,
-                label=self.planner,
-                linewidth=3,
-                color=planner_stl[self.planner],
-            )
-        # start and goal marker
+            ax.plot3D(x_av, y_av, z_av, label=self.planner, linewidth=3, color=planner_stl[self.planner])
+
         if plt_cfg["ql"] > 0:
             ax.scatter([sx], [sy], [sz], color="b", marker="o", s=150)
             ax.scatter([ex], [ey], [ez], color="r", marker="*", s=150)
-
 
             ax.set_xlabel("x in [m]")
             ax.set_ylabel("y in [m]")
             ax.set_zlabel("z in [m]")
 
-            # if 'kuka' in self.trj_pth:
-            #     ax.set_yticks([-0.5, 0])
-
-
-            # ax.set_xlim([-0.8,0.3])
-            # ax.set_ylim([-0.8,0.5])
-            # ax.set_zlim([0.4,1.1])
-
-            # ax.view_init(elev=10, azim=230)
             ax.view_init(elev=10, azim=200)
             ax.set_aspect('auto')
 
-        # path_length /= n_runs
-        # print(path_length,np.mean(tr_len))
         self.evaluations["smoothness" + self.planner] = smoothness
         self.evaluations["tr_len_" + self.planner] = tr_len
         self.evaluations["eev_" + self.planner] = ee_v
@@ -529,6 +535,7 @@ class qual:
         self.evaluations["tr_av_" + self.planner] = [x_av, y_av, z_av]
         return self.evaluations
 
+    
     # returns the minimum amount of steps in each file
     def count_elems(self, arr):
         # each_episode = range(1,arr[len(arr)-1])
@@ -537,22 +544,10 @@ class qual:
         # return 0
         unique, counts = np.unique(arr, return_counts=True)
         print(unique,counts)
-    """
+
     # adjust dimensions of trj arrays
     def unify_trajs(self, trj, max_el):
-        modified_trj = trj
-        diff = len(trj) - max_el
-        n = 0
-        while n < diff:
-            if (len(modified_trj) <= n + 1):  # if diff is too big, then delete earlier values
-                modified_trj = np.delete(modified_trj, random.randint(1, 3))
-            else:
-                modified_trj = np.delete(modified_trj, n + 1)
-            n += 1
-
-        return modified_trj
-    """    
-    def unify_trajs(self, trj, max_el):
+        #print(trj)
         if len(trj) < max_el:
             last_value = trj[-1]
             padding = np.full(max_el - len(trj), last_value)
@@ -560,7 +555,6 @@ class qual:
         else:
             trj = trj[:max_el]
         return trj
-         
 
 def makeplot_qual(eval_path, robot):
 
@@ -706,7 +700,7 @@ def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True
     # print(colors)
     # Number of bars per group
     n_bars = len(data)
-    print(data)
+    #print(data)
     if n_bars > 0:
         # The width of a single bar
         # print(data)
@@ -784,7 +778,6 @@ def bar_av(experiments, ttl, plnr):
     data_smooth = {}
     mean_smooth = {}
     rel_smooth = {}
-
     # format dict according bar function
     for exp in experiments:
         for key in exp:
@@ -822,9 +815,11 @@ def bar_av(experiments, ttl, plnr):
                             mean_smooth[p].append(np.mean(exp[key]))
                         else:
                             mean_smooth[p] = [np.mean(exp[key])]
-
+    
+    #print(mean_dur)
     # bar_3d(data_len)
-
+    
+    """
     for p in mean_dur:
         if not "DRL" in p:
             # diif_dur = [element1 - element2 for (element1, element2) in zip(mean_dur["DRL"], mean_dur[p])]
@@ -838,7 +833,7 @@ def bar_av(experiments, ttl, plnr):
             rel_len[p] = list(map(truediv, mean_len[p], mean_len["DRL"]))
             rel_dur[p] = list(map(truediv, mean_dur[p], mean_dur["DRL"]))
             rel_vel[p] = list(map(truediv, mean_vel[p], mean_vel["DRL"]))
-
+    """
     # print(mean_len)
     # print(ttl)
     # print('dur',mean_dur)
@@ -953,24 +948,22 @@ if __name__ == "__main__":
     planner_stl["NC-RRT"] = "tab:purple"
     planner_stl["RRTs"] = "tab:red"
     planner_stl["DRL-AmirV9"] = "tab:gray"
-    planner_stl["Real"] = "tab:blue"
-    planner_stl["Simul"] = "tab:orange"
+    planner_stl["Real"] = "tab:gray"
+    planner_stl["Simulated"] = "tab:orange"
 
     plt_cfg = {}
     plt_cfg["ql"] = 2
     plt_cfg["qt"] = 0
     # plt_cfg["planner"] = "DRL,DRL-JV,RRT,NC-RRT,DRL-AmirV9"
     # plt_cfg["planner"] = "NC-RRT,DRL,DRL-AmirV9"
-    #plt_cfg["planner"] = "DRL-IK,DRL-JV"
-    plt_cfg["planner"] = "Real"
+    plt_cfg["planner"] = "Real,Simulated"
 
     # # Ur 5 ----------------------------------------------------------
     # ur5_1 = makeplot_qual("../ur5/trajectory/testcase1/", "ur5_1")
     # ur5_2 = makeplot_qual("../ur5/trajectory/testcase2/", "ur5_2")
     # ur5_3 = makeplot_qual("../ur5/trajectory/testcase3/", "ur5_3")
 
-    ur5_1 = makeplot_qual("experiments/Jihoon/", "Jihoon")
-
+    ur5_1 = makeplot_qual("experiments/Jihoon/", "ur5_new")
 
     # # Kuka ----------------------------------------------------------
     # plt_cfg["planner"] = "DRL,RRT,NC-RRT"
@@ -982,7 +975,7 @@ if __name__ == "__main__":
     # # average bar plots ---------------------------------------------
     # bar_av([ur5_1, ur5_2, ur5_3], "ur5", "DRL,RRT,NC-RRT,DRL-JV")
     # bar_av([ur5_1], "ur5","DRL,NC-RRT,DRL-JV,DRL-AmirV9")
-    # bar_av([ur5_1], "ur5", "DRL,DRL-AmirV9")
+    bar_av([ur5_1], "ur5", "Real,Simulated")
     # bar_av([kuka_1, kuka_2, kuka_3, kuka_4], "kuka", "DRL,RRT,NC-RRT")
 
     # 3d bar plots --------------------------------------------------
