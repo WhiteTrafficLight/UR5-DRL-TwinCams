@@ -68,13 +68,6 @@ env:
           dist_threshold_overwrite: 0.05
           reward_success: 500
   world:
-    type: "Generated"
+    type: "S2RExperiment"
     config:
-      workspace_boundaries: [-2, 2, -2, 2, -1, 5]
-      start_override: 
-      obstacles:
-      - type: "box"
-        position: [0.25, 0.25, -0.5]
-        rotation: [0, 0, 0]
-        params:
-          halfExtents: [0.3, 0.3, 0.5]
+      max_num_obstacles: 1

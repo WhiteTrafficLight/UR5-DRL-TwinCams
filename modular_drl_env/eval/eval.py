@@ -948,22 +948,23 @@ if __name__ == "__main__":
     planner_stl["NC-RRT"] = "tab:purple"
     planner_stl["RRTs"] = "tab:red"
     planner_stl["DRL-AmirV9"] = "tab:gray"
-    planner_stl["Real"] = "tab:gray"
+    planner_stl["DRL-AV"] = "tab:gray"
     planner_stl["Simulated"] = "tab:orange"
+    planner_stl["BiRRT"] = "tab:green"
 
     plt_cfg = {}
     plt_cfg["ql"] = 2
     plt_cfg["qt"] = 0
     # plt_cfg["planner"] = "DRL,DRL-JV,RRT,NC-RRT,DRL-AmirV9"
     # plt_cfg["planner"] = "NC-RRT,DRL,DRL-AmirV9"
-    plt_cfg["planner"] = "Real,Simulated"
+    plt_cfg["planner"] = "DRL-AV, RRT, BiRRT"
 
     # # Ur 5 ----------------------------------------------------------
     # ur5_1 = makeplot_qual("../ur5/trajectory/testcase1/", "ur5_1")
     # ur5_2 = makeplot_qual("../ur5/trajectory/testcase2/", "ur5_2")
     # ur5_3 = makeplot_qual("../ur5/trajectory/testcase3/", "ur5_3")
 
-    ur5_1 = makeplot_qual("experiments/Jihoon/", "ur5_new")
+    ur5_1 = makeplot_qual("experiments/Jihoon/", "ur5_Jihoon")
 
     # # Kuka ----------------------------------------------------------
     # plt_cfg["planner"] = "DRL,RRT,NC-RRT"
@@ -975,7 +976,7 @@ if __name__ == "__main__":
     # # average bar plots ---------------------------------------------
     # bar_av([ur5_1, ur5_2, ur5_3], "ur5", "DRL,RRT,NC-RRT,DRL-JV")
     # bar_av([ur5_1], "ur5","DRL,NC-RRT,DRL-JV,DRL-AmirV9")
-    bar_av([ur5_1], "ur5", "Real,Simulated")
+    bar_av([ur5_1], "ur5", "DRL-AV,RRT,BiRRT")
     # bar_av([kuka_1, kuka_2, kuka_3, kuka_4], "kuka", "DRL,RRT,NC-RRT")
 
     # 3d bar plots --------------------------------------------------

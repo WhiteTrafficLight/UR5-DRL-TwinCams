@@ -17,7 +17,7 @@ from modular_drl_env.gym_env.environment import ModularDRLEnv
 from modular_drl_env.util.configparser import parse_config
 from modular_drl_env.util.pybullet_util import pybullet_util as pyb_u
 from modular_drl_env.world.obstacles.shapes import Box, Sphere
-from modular_drl_env.planner.planner_implementations.rrt import BiRRT
+from modular_drl_env.planner.planner_implementations.rrt import RRT,BiRRT,RRTStar
 import ros_numpy
 from stable_baselines3 import PPO
 import open3d as o3d
@@ -64,7 +64,7 @@ JOINT_NAMES = [
 class listener_node_one:
     def __init__(self, action_rate, control_rate, num_voxels, point_cloud_static):
         # yaml config file
-        self.config_path = '/home/ur5/Jihoon/IR-DRL/Sim2Real/config_data/config.yaml'
+        self.config_path = '/home/ur5/Jihoon/modules/IR-DRL/Sim2Real/config_data/config.yaml'
         self.config = self.load_config(self.config_path)
 
         # variables for logging real clock time
@@ -192,7 +192,7 @@ class listener_node_one:
         
         # custom sim2real config parsen
         #_, env_config = parse_config("/home/moga/Desktop/IR-DRL/configs/S2R/obstsensor_trajectory_PPO.yaml", False) #False = kein Training
-        _, env_config = parse_config("/home/ur5/Jihoon/IR-DRL/configs/s2rexperiment_default_config.yaml", False)
+        _, env_config = parse_config("/home/ur5/Jihoon/modules/IR-DRL/configs/s2rexperiment_default_config.yaml", False)
         env_config["env_id"] = 0
         # mit der config env starten
         self.env = ModularDRLEnv(env_config)
@@ -213,7 +213,7 @@ class listener_node_one:
 
         # load DRL model
         #self.model = PPO.load("/home/moga/Desktop/IR-DRL/models/weights/model_interrupt.zip")  # trajectory
-        self.model = PPO.load("/home/ur5/Jihoon/IR-DRL/models/weights/PPO_s2rexperiment/model_149040000_steps.zip")  # no trajectory
+        self.model = PPO.load("/home/ur5/Jihoon/modules/IR-DRL/models/weights/PPO_s2rexperiment/model_149040000_steps.zip")  # no trajectory
         
         # load RRT planner
         self.planner = BiRRT(self.virtual_robot, padding=False)
@@ -370,7 +370,7 @@ class listener_node_one:
                         self.sim_step = self.sim_step + 1
                         pos_ee_last = pos_ee  
                         print("[cbAction] Action added")
-
+    """
     #Planner for RRT                
     def cbActionPlanner(self, event):
         if self.joints is not None:
@@ -396,7 +396,7 @@ class listener_node_one:
                         # Waiting for real_step to catch up to sim_step
                         continue
 
-                    # turn angles into vector between -1 and 1 so that we can properly step the env in order to get logs at the end
+                    # turn angles into vector between -1 and 1 so that we can properly step the env in order to get logs at the end               
                     action = self.trajectory[self.trajectory_idx]
                     action = ((action + self.virtual_robot._joints_limits_upper) / (self.virtual_robot._joints_range / 2)) - 1
 
@@ -444,7 +444,99 @@ class listener_node_one:
                     # step up trajectory
                     if np.linalg.norm(self.trajectory[self.trajectory_idx] - pyb_u.get_joint_states(self.virtual_robot.object_id, self.virtual_robot.all_joints_ids)[0]) < 8e-2:
                         self.trajectory_idx += 1
-                        
+    """
+
+    def cbActionPlanner(self, event):
+        if self.joints is not None:
+            if not self.mode and self.q_goal is not None and self.trajectory is not None and not self.inference_done:  # planner mode activated and a valid goal has been created in cbControl
+                print("[cbAction] starting planner trajectory execution")
+                # set inference mutex such that other callbacks do nothing while new movement is calculated
+                self.running_inference = True
+                # manually reset a few env attributes (we don't want to use env.reset() because that would delete all the voxels)
+                self.env.steps_current_episode = 0
+                self.env.is_success = False
+                self.virtual_robot.moveto_joints(self.joints, False, self.virtual_robot.all_joints_ids)
+                self.trajectory_idx = 0
+                # reset sensors
+                for sensor in self.env.sensors:
+                    # sensor.reset()
+                    sensor.update(0)
+
+                # get one obs to correctly initialize a few values in the env internals
+                _ = self.env._get_obs()
+
+                while True:
+                    if self.sim_step - self.real_step >= self.drl_horizon:
+                        # Waiting for real_step to catch up to sim_step
+                        continue
+
+                    if self.trajectory_idx % 10 == 0:
+                        # Plan a new trajectory
+                        self.trajectory = self.planner.plan(self.q_goal, self.env.world.active_objects)
+
+                        if len(self.trajectory) < 2:
+                            print("[cbAction] Invalid trajectory received. Trying again.")
+                            continue
+
+                        # Reset trajectory index
+                        self.trajectory_idx = 0
+                        next_step = self.trajectory[1]
+                    else:
+                        # Ensure index is within bounds
+                        next_step_idx = self.trajectory_idx % 10 + 1
+                        if next_step_idx < len(self.trajectory):
+                            next_step = self.trajectory[next_step_idx]
+                        else:
+                            print("[cbAction] Index out of bounds. Replanning trajectory.")
+                            self.trajectory_idx = 0
+                            continue
+
+                    action = ((next_step + self.virtual_robot._joints_limits_upper) / (self.virtual_robot._joints_range / 2)) - 1
+                    _, _, _, info = self.env.step(action)
+
+                    # Check for loop breaking conditions
+                    if info["collision"]:
+                        self.q_goal = None
+                        self.goal = None
+                        self.trajectory = None
+                        self.mode = True
+                        self.virtual_robot.use_physics_sim = True
+                        self.virtual_robot.control_mode = 2
+                        self.actions = np.ones((100, len(self.virtual_robot.all_joints_ids))) * self.joints
+                        self.sim_step = -1
+                        self.running_inference = False
+                        self.inference_done = True
+                        self.env.episode += 1
+                        # find the voxels that collide with the robot
+                        pyb_u.toggle_rendering(False)
+                        for tup in pyb_u.collisions:
+                            if self.virtual_robot.object_id in tup and not self.probe_voxel.object_id in tup:
+                                voxel_id = tup[0] if tup[0] != self.virtual_robot.object_id else tup[1]
+                                pyb.changeVisualShape(pyb_u.to_pb(voxel_id), -1, rgbaColor=[1, 0, 0, 1])
+                        pyb_u.toggle_rendering(True)
+                        print("[cbAction] Found collision during inference! Choose a new goal or try again.")
+                        return
+                    elif np.linalg.norm(self.trajectory[-1] - pyb_u.get_joint_states(self.virtual_robot.object_id, self.virtual_robot.all_joints_ids)[0]) < 8e-2:
+                        self.mode = True
+                        self.virtual_robot.use_physics_sim = True
+                        self.virtual_robot.control_mode = 2
+                        self.drl_success = True
+                        self.actions[self.sim_step % self.actions.shape[0]], _ = pyb_u.get_joint_states(self.virtual_robot.object_id, self.virtual_robot.all_joints_ids)
+                        self.sim_step = self.sim_step + 1
+                        self.running_inference = False
+                        self.inference_done = True
+                        self.env.episode += 1
+                        return
+
+                    self.actions[self.sim_step % self.actions.shape[0]], _ = pyb_u.get_joint_states(self.virtual_robot.object_id, self.virtual_robot.all_joints_ids)
+                    self.sim_step = self.sim_step + 1
+                    print("[cbAction] Action added")
+                    self.trajectory_idx += 1
+
+                    # Step up trajectory index if within bounds
+                    if self.trajectory_idx >= len(self.trajectory):
+                        self.trajectory_idx = 0
+
                         
     
     def cbControl(self, event):  
@@ -512,7 +604,7 @@ class listener_node_one:
                 # safety: reset to actual joint angles before the other callback starts running (even though it does the same thing there too)
                 self.virtual_robot.moveto_joints(self.joints, False, self.virtual_robot.all_joints_ids)
                 # another safety: let a second pass to avoid bad consequences from concurrent callbacks overlapping
-                sleep(1)
+                sleep(3)
                 self.goal = tmp_goal
                 self.q_goal = q_goal
                 # self.goal_sphere.position = self.goal
@@ -570,11 +662,12 @@ class listener_node_one:
                 self.drl_success = False
                 self.inference_done = False
                 print("[cbControl] Goal reached, Task failed successfully!")
-
+    
     def _control_planner(self):
         # set mode to planner
         self.mode = False
         self.virtual_robot.use_physics_sim = False
+        self.inference_done = False
         
         inp = input("[cbControl] Input target position (xyz) with a space between each one: \n")
         inp = inp.split(" ")
@@ -594,22 +687,25 @@ class listener_node_one:
         # check for collision in starting position
         pyb_u.perform_collision_check()
         pyb_u.get_collisions()
+        
         if pyb_u.collision:
             print("[cbControl] current position of robot is in collision in simulation! Try again or check the camera/voxelization if the problem persists.")
             self.mode = True
             self.virtual_robot.use_physics_sim = True
             return
-        
+
         q_goal = self.virtual_robot._solve_ik(tmp_goal, None)
+        print(q_goal)
+
         if q_goal is None:
             print("[cbControl] Could not find a valid joint configuration for the given position.")
             self.mode = True
             self.virtual_robot.use_physics_sim = True
-            return
+            return    
         
-        self.virtual_robot.moveto_joints(q_goal, False, self.virtual_robot.all_joints_ids)
         
         # check for collision in target position
+        self.virtual_robot.moveto_joints(q_goal, False, self.virtual_robot.all_joints_ids)  
         pyb_u.perform_collision_check()
         pyb_u.get_collisions()
         if pyb_u.collision:
@@ -634,8 +730,9 @@ class listener_node_one:
         self.real_step = 0
         self.virtual_robot.world.position_targets[0] = np.array([1,2,3])
         self.trajectory_idx = 0
+        sleep(3)
         self.q_goal = q_goal 
-        self.goal = tmp_goal  # some nonsense goal to set the mutex 
+        self.goal = np.array([1,2,3])   # some nonsense goal to set the mutex 
 
 
     """
@@ -673,6 +770,7 @@ class listener_node_one:
         # call the planner to plan a collision free route to the target
         self.virtual_robot.moveto_joints(self.joints, False, self.virtual_robot.all_joints_ids)
         self.trajectory = self.planner.plan(inp, self.env.world.active_objects)
+        print("computed traj:", self.trajectory)
         if self.trajectory is None:
             print("[cbControl] Planner failed, try again!")
             self.mode = True
@@ -686,7 +784,7 @@ class listener_node_one:
         self.virtual_robot.world.position_targets[0] = np.array([1,2,3])
         self.trajectory_idx = 0
         self.q_goal = inp 
-        self.goal = np.array([1,2,3])  # some nonsense goal to set the mutex
+        self.goal = np.array([1,2,3])  # some nonsense goal to set the mutex 
     """     
 
     def _control_calibrate(self):
