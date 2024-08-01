@@ -1,7 +1,7 @@
 run:
   algorithm:
     load_model: True  
-    model_path: "models/weights/PPO_s2rexperiment/model_149040000_steps.zip"  
+    model_path: "models/weights/model_23040000_steps.zip"  
     type: "PPO"
   train:
     num_envs : 24  
@@ -33,7 +33,7 @@ env:
         name: "ur5_1"
         base_position: [0, 0, 0.01]
         base_orientation: [0, 0, -180]
-        resting_angles: [-90, -120, -90, -135, 90, 0]
+        resting_angles: [-180, -45, -90, -135, 90, 0]
         control_mode: 2
         self_collision: False
         controlled_joints: ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint", "wrist_2_joint"]

@@ -266,7 +266,8 @@ class listener_node_one:
         duration = rospy.Duration(3)  
         point = JointTrajectoryPoint()
         #point.positions = [i*np.pi/180 for i in [-81.25, -90, -90, 0, 0, 0]]
-        point.positions = [i*np.pi/180 for i in [-180, -45, -90, -135, 90, 0]]
+        #point.positions = [i*np.pi/180 for i in [-180, -45, -90, -135, 90, 0]]
+        point.positions = [i*np.pi/180 for i in [-90, -120, -90, -135, 90, 0]]
         point.time_from_start = duration
         goal.trajectory.points.append(point)
         self.trajectory_client.send_goal(goal) 
@@ -370,7 +371,7 @@ class listener_node_one:
                         self.sim_step = self.sim_step + 1
                         pos_ee_last = pos_ee  
                         print("[cbAction] Action added")
-    """
+    
     #Planner for RRT                
     def cbActionPlanner(self, event):
         if self.joints is not None:
@@ -445,7 +446,8 @@ class listener_node_one:
                     if np.linalg.norm(self.trajectory[self.trajectory_idx] - pyb_u.get_joint_states(self.virtual_robot.object_id, self.virtual_robot.all_joints_ids)[0]) < 8e-2:
                         self.trajectory_idx += 1
     """
-
+    
+    #new version for dynamic env
     def cbActionPlanner(self, event):
         if self.joints is not None:
             if not self.mode and self.q_goal is not None and self.trajectory is not None and not self.inference_done:  # planner mode activated and a valid goal has been created in cbControl
@@ -456,7 +458,6 @@ class listener_node_one:
                 self.env.steps_current_episode = 0
                 self.env.is_success = False
                 self.virtual_robot.moveto_joints(self.joints, False, self.virtual_robot.all_joints_ids)
-                self.trajectory_idx = 0
                 # reset sensors
                 for sensor in self.env.sensors:
                     # sensor.reset()
@@ -475,7 +476,7 @@ class listener_node_one:
                         self.trajectory = self.planner.plan(self.q_goal, self.env.world.active_objects)
 
                         if len(self.trajectory) < 2:
-                            print("[cbAction] Invalid trajectory received. Trying again.")
+                            #print("[cbAction] Invalid trajectory received. Trying again.")
                             continue
 
                         # Reset trajectory index
@@ -537,7 +538,7 @@ class listener_node_one:
                     if self.trajectory_idx >= len(self.trajectory):
                         self.trajectory_idx = 0
 
-                        
+    """                   
     
     def cbControl(self, event):  
         if self.startup:
@@ -716,7 +717,10 @@ class listener_node_one:
         
         # call the planner to plan a collision free route to the target
         self.virtual_robot.moveto_joints(self.joints, False, self.virtual_robot.all_joints_ids)
+        start_time = time()
         self.trajectory = self.planner.plan(q_goal, self.env.world.active_objects)
+        end_time = time()
+        print(end_time-start_time)
         if self.trajectory is None:
             print("[cbControl] Planner failed, try again!")
             self.mode = True
