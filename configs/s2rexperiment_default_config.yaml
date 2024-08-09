@@ -35,7 +35,7 @@ env:
         base_orientation: [0, 0, 0]
         resting_angles: [0, -120, -90, -135, 90, 0]
         control_mode: 2
-        self_collision: False
+        self_collision: True
         controlled_joints: ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint", "wrist_2_joint"]
       sensors:
         - type: "Obstacle"
