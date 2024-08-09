@@ -267,7 +267,7 @@ class listener_node_one:
         point = JointTrajectoryPoint()
         #point.positions = [i*np.pi/180 for i in [-81.25, -90, -90, 0, 0, 0]]
         #point.positions = [i*np.pi/180 for i in [-180, -45, -90, -135, 90, 0]]
-        point.positions = [i*np.pi/180 for i in [-90, -120, -90, -135, 90, 0]]
+        point.positions = [i*np.pi/180 for i in [0, -120, -90, -135, 90, 0]]
         point.time_from_start = duration
         goal.trajectory.points.append(point)
         self.trajectory_client.send_goal(goal) 
