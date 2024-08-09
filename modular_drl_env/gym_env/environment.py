@@ -172,6 +172,7 @@ class ModularDRLEnv(gym.Env):
             self.goal_metrics += goal.on_env_reset(np.average(self.success_stat))
 
         # render non-essential visual stuff
+        """
         if not self.train:
             if self.show_auxillary_geometry_goal:
                 for goal in self.goals:
@@ -181,7 +182,11 @@ class ModularDRLEnv(gym.Env):
                 for sensor in self.sensors:
                     sensor.delete_visual_aux()
                     sensor.build_visual_aux()
-
+        """"
+        for goal in self.goals:
+                    goal.delete_visual_aux()
+                    goal.build_visual_aux() 
+        
         pyb_u.toggle_rendering(True)
         return self._get_obs()
 
