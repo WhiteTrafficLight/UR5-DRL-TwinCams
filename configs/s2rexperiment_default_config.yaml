@@ -70,4 +70,4 @@ env:
   world:
     type: "S2RExperiment"
     config:
-      max_num_obstacles: 1
+      max_num_obstacles: 3
