@@ -1,7 +1,7 @@
 run:
   algorithm:
-    load_model: True  
-    model_path: "models/weights/PPO_s2rexperiment/model_149040000_steps.zip"  
+    load_model: False  
+    model_path: ""  
     type: "PPO"
   train:
     num_envs : 24  
