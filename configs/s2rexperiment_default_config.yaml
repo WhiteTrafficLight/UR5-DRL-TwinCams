@@ -1,6 +1,6 @@
 run:
   algorithm:
-    load_model: False  
+    load_model: True  
     model_path: ""  
     type: "PPO"
   train:
@@ -9,7 +9,7 @@ run:
     timesteps: 150000000 
     save_freq : 90000
     save_folder: "./models/weights"  
-    save_name: "s2rexperiment"
+    save_name: "s2rexperiment_new"
   eval:
     max_episodes: -1
     logging: 1
