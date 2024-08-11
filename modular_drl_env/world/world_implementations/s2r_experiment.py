@@ -394,10 +394,7 @@ class S2RExperiment(World):
 
 class S2RExperiment(World):
     """
-    This class replicates our real world setup and implements a few moderately constricted experiments
-    with semi-random obstacles on it.
-    Note: All of the below is written with the assumption that there is only one UR5 at [0, 0, 0.01] and [0, 0, -180] orientation.
-          Anything else will probaly create bad results.
+    New Class with the updated table size
     """
 
     def __init__(self, 
@@ -585,14 +582,19 @@ class S2RExperiment(World):
         
         # Define the starting position with y = 0.825
         random_z_start = np.random.uniform(low=0.25, high=0.4)
-        start_pos = np.array([0.4, 0.825, random_z_start])
+        y_start = choice([-0.825,0.825])
+        start_pos = np.array([0.4, y_start, random_z_start])
         obst.move_base(start_pos)
         
         # Define the move step
         obst.move_step = 0.5 * self.sim_step * self.sim_steps_per_env_step
         
         # Define the trajectory to move between y = -0.825 and y = 0.825
-        obst.trajectory = [np.array([0, -1.65, 0.0]), np.array([0, 1.65, 0.0])]
+        if y_start > 0.0:
+            obst.trajectory = [np.array([0, -1.65, 0.0]), np.array([0, 0.0, 0.0])]
+        else:
+            obst.trajectory = [np.array([0, 1.65, 0.0]), np.array([0, 0.0, 0.0])]    
+
         shuffle(obst.trajectory)
         
         # Add the obstacle to the list of active objects
@@ -819,8 +821,6 @@ class S2RExperiment(World):
     def update(self):
         for obstacle in self.active_objects:
             obstacle.move_traj()
-
-
 class S2RExperimentVoxels(World):
 
     def __init__(self, 
