@@ -182,7 +182,7 @@ class ModularDRLEnv(gym.Env):
                 for sensor in self.sensors:
                     sensor.delete_visual_aux()
                     sensor.build_visual_aux()
-        """"
+        """
         for goal in self.goals:
                     goal.delete_visual_aux()
                     goal.build_visual_aux() 
