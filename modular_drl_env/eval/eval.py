@@ -46,12 +46,13 @@ def standardize_log_format(data):
 
 
 class qual:
-    def __init__(self, pth, planner, single="True"):
+    def __init__(self, pth, planner, single="True",target_position=None, threshold=0.05):
         self.trj_pth = pth
         self.planner = planner
         self.evaluations = {}
         self.single = single
-
+        self.target_position = target_position
+        self.threshold = threshold
 
     def comp_smoothness(self,x,y,z):
         idx = 0
@@ -82,6 +83,19 @@ class qual:
             z[i] = np.fromstring(points[1:-1], dtype=np.single, sep=' ')[2]
             i += 1 
         return x,y,z
+    
+    def plot_target_with_threshold(self):
+        # Extract the target position
+        x_t, y_t, z_t = self.target_position
+        r = self.threshold
+        # Create a sphere to represent the threshold around the target
+        u, v = np.mgrid[0:2*np.pi:50j, 0:np.pi:50j]
+        x = r*np.cos(u)*np.sin(v)
+        y = r*np.sin(u)*np.sin(v)
+        z = r*np.cos(v)
+
+        # Plot the sphere representing the threshold
+        ax.plot_surface(x_t-x, y_t-y, z_t-z, color='pink', alpha=0.1, rstride=4, cstride=4)
 
     def plot_trj2(self):
         arr = os.listdir(self.trj_pth)
@@ -533,6 +547,11 @@ class qual:
         self.evaluations["eev_" + self.planner] = ee_v
         self.evaluations["runtime_" + self.planner] = runtime
         self.evaluations["tr_av_" + self.planner] = [x_av, y_av, z_av]
+        
+        # Plot the target position and its threshold if defined
+        if self.target_position:
+            self.plot_target_with_threshold()
+            
         return self.evaluations
 
     
@@ -556,7 +575,7 @@ class qual:
             trj = trj[:max_el]
         return trj
 
-def makeplot_qual(eval_path, robot):
+def makeplot_qual(eval_path, robot, target_position, threshold):
 
     experiments = {}
     if plt_cfg["ql"] == 2:
@@ -573,7 +592,7 @@ def makeplot_qual(eval_path, robot):
             if plt_cfg["ql"] == 1:
                 plt.figure(title)
             # create class obj
-            quali = qual(filepath, planner, True)
+            quali = qual(filepath, planner, True, target_position, threshold)
             # call plot func
             evals = quali.plot_trj()
             dist = evals["tr_len_" + planner]
@@ -942,14 +961,14 @@ if __name__ == "__main__":
     experiments = {}
     planner_stl = {}
 
-    planner_stl["DRL-IK"] = "tab:blue"
-    planner_stl["DRL-JV"] = "tab:green"
-    planner_stl["RRT"] = "tab:orange"
-    planner_stl["NC-RRT"] = "tab:purple"
-    planner_stl["RRTs"] = "tab:red"
-    planner_stl["DRL-AmirV9"] = "tab:gray"
-    planner_stl["DRL-AV"] = "tab:gray"
-    planner_stl["Simulated"] = "tab:orange"
+    planner_stl["DRL_static_single"] = "tab:blue"
+    planner_stl["DRL_static_double"] = "tab:green"
+    planner_stl["DRL_dynamic_single"] = "tab:orange"
+    planner_stl["DRL_dynamic_double"] = "tab:purple"
+    planner_stl["BiRRT_static_single"] = "tab:red"
+    planner_stl["BiRRT_static_double"] = "tab:gray"
+    planner_stl["BiRRT_dynamic_single"] = "tab:pink"
+    planner_stl["BiRRT_dynamic_double"] = "tab:blue"
     planner_stl["BiRRT"] = "tab:green"
 
     plt_cfg = {}
@@ -957,14 +976,17 @@ if __name__ == "__main__":
     plt_cfg["qt"] = 0
     # plt_cfg["planner"] = "DRL,DRL-JV,RRT,NC-RRT,DRL-AmirV9"
     # plt_cfg["planner"] = "NC-RRT,DRL,DRL-AmirV9"
-    plt_cfg["planner"] = "DRL-AV, RRT, BiRRT"
+    plt_cfg["planner"] = "DRL_static_single, DRL_static_double"
 
     # # Ur 5 ----------------------------------------------------------
     # ur5_1 = makeplot_qual("../ur5/trajectory/testcase1/", "ur5_1")
     # ur5_2 = makeplot_qual("../ur5/trajectory/testcase2/", "ur5_2")
     # ur5_3 = makeplot_qual("../ur5/trajectory/testcase3/", "ur5_3")
+    
+    target_position = [0.2, 0.5, 0.3]  # Example target position (x, y, z)
+    threshold = 0.1  # Example threshold for the target
 
-    ur5_1 = makeplot_qual("experiments/Jihoon/", "ur5_Jihoon")
+    ur5_1 = makeplot_qual("experiments/Final/", "DRL_static_single_double",target_position,threshold)
 
     # # Kuka ----------------------------------------------------------
     # plt_cfg["planner"] = "DRL,RRT,NC-RRT"
@@ -976,7 +998,7 @@ if __name__ == "__main__":
     # # average bar plots ---------------------------------------------
     # bar_av([ur5_1, ur5_2, ur5_3], "ur5", "DRL,RRT,NC-RRT,DRL-JV")
     # bar_av([ur5_1], "ur5","DRL,NC-RRT,DRL-JV,DRL-AmirV9")
-    bar_av([ur5_1], "ur5", "DRL-AV,RRT,BiRRT")
+    bar_av([ur5_1], "DRL_static_single_double", "DRL_static_single,DRL_static_double")
     # bar_av([kuka_1, kuka_2, kuka_3, kuka_4], "kuka", "DRL,RRT,NC-RRT")
 
     # 3d bar plots --------------------------------------------------
