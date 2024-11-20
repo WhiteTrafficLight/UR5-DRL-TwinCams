@@ -1,5 +1,6 @@
 # Modular DRL Gym Env for Robots with PyBullet
 
+This repository includes variations from the original author integrating deep point cloud registration model. You can toggle between 1 camera and 2 cameras for real scenario experiment comparison. For point cloud registration please refer to the repository "OverlapPredator" in my repositories.
 
 <p float="left">
   <img src="https://github.com/ignc-research/IR-DRL/blob/sim2real/docs/gifs/GifReal.gif" width="400" />
