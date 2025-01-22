@@ -3,8 +3,8 @@
 This repository is a fork of the [original IR-DRL project](https://github.com/ignc-research/IR-DRL), customized to integrate additional features and adjustments, including point cloud registration using the [OverlapPredator](https://github.com/prs-eth/OverlapPredator) model. It also includes support for toggling between one and two cameras for real-world scenario experiments. The goal is to experiment with potential enhancements in path-planning by addressing calibration and occlusion issues. This is achieved by reconstructing a complete 3D map using multiple cameras and point cloud registration.
 
 <p float="left">
-  <figure><img src="docs/gifs/SingleCamera.png" width="400" /><figcaption>(a) Point cloud from a single camera.</figcaption></figure> 
-  <figure><img src="docs/gifs/DoubleCamera.png" width="400" /><figcaption>(a) Point cloud from a single camera.</figcaption></figure> 
+  <img src="docs/gifs/SingleCamera.png" width="400" /><figcaption>(a) Point cloud from a single camera.</figcaption>
+  <img src="docs/gifs/DoubleCamera.png" width="400" /><figcaption>(a) Point cloud from a single camera.</figcaption>
 </p>
 
 ---
