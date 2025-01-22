@@ -1,28 +1,58 @@
-# Modular DRL Gym Env for Robots with PyBullet
+# Modular DRL Gym Env for Robots with PyBullet (Customized Fork)
 
-This repository includes variations from the original author integrating deep point cloud registration model. You can toggle between 1 camera and 2 cameras for real scenario experiment comparison. For point cloud registration please refer to the repository "OverlapPredator" in my repositories.
+This repository is a fork of the [original IR-DRL project](https://github.com/ignc-research/IR-DRL), customized to integrate additional features and adjustments, including point cloud registration using the [OverlapPredator](https://github.com/prs-eth/OverlapPredator) model. It also includes support for toggling between one and two cameras for real-world scenario experiments.
 
 <p float="left">
   <img src="https://github.com/ignc-research/IR-DRL/blob/sim2real/docs/gifs/GifReal.gif" width="400" />
   <img src="https://github.com/ignc-research/IR-DRL/blob/sim2real/docs/gifs/GifSim.gif" width="400" /> 
 </p>
 
+---
 
-## Introduction
+## Custom Modifications
+1. **Training Process Visualization**:
+   - Added an option in `run.py` to visualize the training process for observation.
+2. **Adjusted Robot Step Size**:
+   - Updated the step size of the robot end-effector in `/modular_drl_env/robot/robot.py` to improve successful training outcomes.
+3. **Reward System Updates**:
+   - Enhanced the reward system for better training performance.
+4. **Multiple Cameras and Point Cloud Registration**:
+   - Integrated variations in `IR-DRL/Sim2Real/move_DRL_main.py` to support:
+     - Multiple cameras for real-world scenarios.
+     - Real-time point cloud registration using the OverlapPredator model.
+5. **New Training Environment**:
+   - Added a custom training environment tailored for specific experiment cases.
 
-This repository provides a platform for training virtual agents in robotics tasks using Deep Reinforcement Learning (DRL). The code is built on OpenAI Gym, Stable Baselines, and PyBullet. The system is designed to operate using a modular approach, giving the user the freedom to combine, configure, and repurpose single components like goal, robot or sensor types.
+---
 
-An integral part of this project is the implementation of a transition mechanism from a simulated to a real-world environment. By leveraging the functionalty of ROS (Robot Operating System) and Voxelisation techniques with Open 3D, there is a system established that can effectively deploy trained models into real-world scenarios. There they are able to deal with static and dynamic obstacles.
+## Overview
+This repository provides a robust platform for training virtual agents in robotics tasks using Deep Reinforcement Learning (DRL). It supports transitioning from simulation to real-world applications with modular components like goals, robots, and sensors.
 
-This project is intended to serve as a resource for researchers, robotics enthusiasts, and professional developers interested in the application of Deep Reinforcement Learning in robotics.
+### Key Features
+- **Deep Point Cloud Registration**: Integrates OverlapPredator for real-time point cloud processing.
+- **Modular Environment**: Easily customizable for various tasks, including training robots to handle static and dynamic obstacles.
+- **Sim-to-Real Transition**: Uses ROS and Open3D for deployment in real-world environments.
+
+---
 
 ## Getting Started
 
-To get started with the project, please follow the instructions in the following sections:
+### Installation
+Follow the setup instructions from the original repository: [Setup](docs/SETUP.md).
 
-- [Setup](docs/SETUP.md): Instructions for setting up and installing the project.
-- [Training/Evaluation](docs/TRAINING.md): Information on how to train and evaluate the models.
-- [Perception](docs/Perception/Perception.md): Details about our perception Pipeline.  
-- [Deployment](docs/Deployment.md): Guidelines for deploying the project in a Real World environment.
+### Key Documentation
+- **Training and Evaluation**: Instructions for training and evaluating models are in [TRAINING.md](docs/TRAINING.md).
+- **Perception Pipeline**: Details on perception handling can be found in [Perception.md](docs/Perception/Perception.md).
+- **Deployment**: Guidelines for real-world deployment are in [Deployment.md](docs/Deployment.md).
 
-Please ensure you read through all the sections to understand how to use the project effectively.
+### Additional Notes
+- Ensure that `OverlapPredator` is installed and properly configured for point cloud registration. Refer to [OverlapPredator Repository](https://github.com/prs-eth/OverlapPredator).
+
+---
+
+## Acknowledgments
+This project is based on [IR-DRL](https://github.com/ignc-research/IR-DRL). Special thanks to the original authors for their contributions.
+
+---
+
+
