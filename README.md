@@ -1,10 +1,10 @@
 # Modular DRL Gym Env for Robots with PyBullet (Customized Fork)
 
-This repository is a fork of the [original IR-DRL project](https://github.com/ignc-research/IR-DRL), customized to integrate additional features and adjustments, including point cloud registration using the [OverlapPredator](https://github.com/prs-eth/OverlapPredator) model. It also includes support for toggling between one and two cameras for real-world scenario experiments.
+This repository is a fork of the [original IR-DRL project](https://github.com/ignc-research/IR-DRL), customized to integrate additional features and adjustments, including point cloud registration using the [OverlapPredator](https://github.com/prs-eth/OverlapPredator) model. It also includes support for toggling between one and two cameras for real-world scenario experiments. The goal is to experiment with potential enhancements in path-planning by addressing calibration and occlusion issues. This is achieved by reconstructing a complete 3D map using multiple cameras and point cloud registration.
 
 <p float="left">
-  <img src="https://github.com/ignc-research/IR-DRL/blob/sim2real/docs/gifs/GifReal.gif" width="400" />
-  <img src="https://github.com/ignc-research/IR-DRL/blob/sim2real/docs/gifs/GifSim.gif" width="400" /> 
+  <img src="https://github.com/WhiteTrafficLight/IR-DRL/docs/gifs/SingleCamera.png" width="400" />
+  <img src="https://github.com/WhiteTrafficLight/IR-DRL/docs/gifs/DoubleCamera.png" width="400" /> 
 </p>
 
 ---
@@ -32,6 +32,7 @@ This repository provides a robust platform for training virtual agents in roboti
 - **Deep Point Cloud Registration**: Integrates OverlapPredator for real-time point cloud processing.
 - **Modular Environment**: Easily customizable for various tasks, including training robots to handle static and dynamic obstacles.
 - **Sim-to-Real Transition**: Uses ROS and Open3D for deployment in real-world environments.
+- **Path-Planning Enhancements**: Experiments with multiple cameras to address calibration and occlusion issues, reconstructing a complete 3D map for better path-planning.
 
 ---
 
@@ -54,5 +55,7 @@ Follow the setup instructions from the original repository: [Setup](docs/SETUP.m
 This project is based on [IR-DRL](https://github.com/ignc-research/IR-DRL). Special thanks to the original authors for their contributions.
 
 ---
+
+
 
 
