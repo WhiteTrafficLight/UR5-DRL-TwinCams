@@ -4,7 +4,7 @@ This repository is a fork of the [original IR-DRL project](https://github.com/ig
 
 <p float="left">
   <img src="docs/gifs/SingleCamera.png" width="400" /><figcaption>(a) Point cloud from a single camera.</figcaption>
-  <img src="docs/gifs/DoubleCamera.png" width="400" /><figcaption>(a) Point cloud from a single camera.</figcaption>
+  <img src="docs/gifs/DoubleCamera.png" width="400" /><figcaption>(b) Point cloud from dual cameras.</figcaption>
 </p>
 
 ---
