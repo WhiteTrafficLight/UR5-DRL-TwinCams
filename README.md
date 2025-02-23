@@ -77,7 +77,7 @@ This project runs on **ROS1 Noetic** with the following dependencies:
    
 ## 📜 Acknowledgments
 This repository is based on [IR-DRL](https://github.com/ignc-research/IR-DRL).  
-The PREDATOR model used for point cloud registration comes from [OverlapPredator](https://github.com/Overlapped-Predator).
+The PREDATOR model used for point cloud registration comes from [OverlapPredator](https://github.com/prs-eth/OverlapPredator.git).
 
 
 
