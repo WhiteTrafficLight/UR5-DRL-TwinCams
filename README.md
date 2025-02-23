@@ -4,8 +4,8 @@ This repository is based on [IR-DRL](https://github.com/ignc-research/IR-DRL) wi
 
 This repository was used in my **master's thesis**:
 > **"Deep Reinforcement Learning and Point Cloud Registration for Collision Avoidance and Path-Planning in Industrial Robotics"**  
-> 📄 **[Master's Thesis Link](#)** *(https://drive.google.com/file/d/1zJlFOs_0xcjcc7gajkvttXdFDhaQVWaQ/view)*  
-> 📄 **[Medium Blog Summary](#)** *(https://medium.com/@jhyu7703/deep-reinforcement-learning-and-point-cloud-registration-for-collision-avoidance-and-path-planning-92d8562158df)*  
+> 📄 **[Master's Thesis Link](https://drive.google.com/file/d/1zJlFOs_0xcjcc7gajkvttXdFDhaQVWaQ/view)** 
+> 📄 **[Medium Blog Summary](https://medium.com/@jhyu7703/deep-reinforcement-learning-and-point-cloud-registration-for-collision-avoidance-and-path-planning-92d8562158df)**
 
 ## 🏗️ Pipeline Overview
 ![Pipeline Overview](path/to/pipeline_image.png)  
@@ -18,7 +18,7 @@ The pipeline consists of:
 - **Simulation in PyBullet & real-world execution via ROS1 Noetic**  
 
 ## 📹 Demo Video
-▶️ **[YouTube Video](https://www.youtube.com/watch?v=y-R9BKT0rpw)** *(Replace with actual video link)*  
+▶️ **[YouTube Video](https://www.youtube.com/watch?v=y-R9BKT0rpw)** 
 
 ## 🔑 Key Modifications
 - **Dual-camera integration** to resolve occlusion in single-camera setups check OverlapPredator/ros_nodes directory.
@@ -79,20 +79,6 @@ This project runs on **ROS1 Noetic** with the following dependencies:
 This repository is based on [IR-DRL](https://github.com/ignc-research/IR-DRL).  
 The PREDATOR model used for point cloud registration comes from [OverlapPredator](https://github.com/Overlapped-Predator).
 
-## 🔗 References
-- **[IR-DRL Original Repository](https://github.com/ignc-research/IR-DRL)**
-- **[OverlapPredator for Point Cloud Registration](https://github.com/Overlapped-Predator)**
-- **Predator Citation:**  
-  ```
-  @InProceedings{Huang_2021_CVPR,
-    author    = {Huang, Shengyu and Gojcic, Zan and Usvyatsov, Mikhail and Wieser, Andreas and Schindler, Konrad},
-    title     = {Predator: Registration of 3D Point Clouds With Low Overlap},
-    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-    month     = {June},
-    year      = {2021},
-    pages     = {4267-4276}
-  }
-  ```
 
 
 
