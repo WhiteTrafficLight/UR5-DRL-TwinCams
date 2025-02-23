@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
-
-
+"""
+Modifications by WhiteTrafficLight:
+- Implemented transformation estimation using OverlapPredator/scripts/module.py instead of relying on ROS-published combined_pointcloud as it does in move_DRL_main.py.
+- The transformation matrix is computed once at the start using the first two point clouds to calibrate the second camera and align both point clouds.
+- Modified for improved experimental data collection and saving results.
+- Attempted to use a dynamic sampling-based path-planning algorithm but failed due to performance and reliability issues.
+"""
 
 import rospy
 from sensor_msgs.msg import JointState

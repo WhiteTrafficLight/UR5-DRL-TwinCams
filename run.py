@@ -65,6 +65,7 @@ if __name__ == "__main__":
             def return_train_env_outer(i):
                 def return_train_env_inner():
                     env_config["env_id"] = i
+                    # Uncomment the follwing two lines to observe the training process
                     #if env_config["env_id"] == 0:
                     #    env_config["display"] = True
                     env = ModularDRLEnv(env_config)  

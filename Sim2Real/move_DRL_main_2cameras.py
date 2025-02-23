@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-
+"""
+Script to use when the calibration info of both cameras are known.
+This script is only experimental
+"""
 
 
 import rospy

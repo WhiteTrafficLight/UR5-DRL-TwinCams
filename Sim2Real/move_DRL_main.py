@@ -1,7 +1,18 @@
 #!/usr/bin/env python
 
+"""
+Modifications by WhiteTrafficLight:
+- Added the ability to toggle between single and dual camera modes.
+- See lines 255-259 for enabling/disabling single/dual camera mode.
+- This script should be used in conjunction with OverlapPredator/ros_nodes for full functionality.
 
-
+Usage:
+- For **single-camera mode**, keep the `/camera/depth/points` topic subscribed (default).
+- For **dual-camera mode**, first start the appropriate script to publish `/combined_pointcloud`:
+    - Run `OverlapPredator/ros_nodes/ros_pointcloud_matcher_static.py` (for static matching)
+    - OR run `OverlapPredator/ros_nodes/ros_pointcloud_matcher_dynamic.py` (for dynamic matching)
+- Then, uncomment the `/combined_pointcloud` subscription in this script.
+"""
 
 import rospy
 from sensor_msgs.msg import JointState
@@ -231,6 +242,7 @@ class listener_node_one:
         print("[Listener] Moving robot into resting pose")
         self._move_to_resting_pose()
         sleep(1)
+        
 
         # init ros stuff
         print("[Listener] Started ee position callback")
@@ -240,7 +252,11 @@ class listener_node_one:
         rospy.Subscriber("/joint_states", JointState, self.cbGetJoints)
         sleep(1)
         print("[Listener] Started callback for raw pointcloud data")
-        rospy.Subscriber("/camera/depth/points", PointCloud2, self.cbGetPointcloud)
+        # Single camera mode
+        self.pointcloud_sub = rospy.Subscriber("/camera/depth/points", PointCloud2, self.cbGetPointcloud)
+        
+        # Dual camera mode (uses combined point cloud from both cameras)
+        # self.pointcloud_sub = rospy.Subscriber("/combined_pointcloud", PointCloud2, self.cbGetPointcloud)
         sleep(1)
         print("[Listener] Started callback for DRL inference")
         rospy.Timer(rospy.Duration(secs=1/action_rate), self.cbAction)
