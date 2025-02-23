@@ -1,3 +1,14 @@
+"""
+This experimental script is designed for dynamic scenarios where the second camera may move.
+In this mode, the transformation matrix between the two RGB-D cameras is recalculated in real time for every frame,
+allowing continuous point cloud registration under changing conditions.
+However, the heavy computational load associated with real-time transformation makes it too slow for practical real-time visualization in RViz.
+
+Additional research, such as integrating IMU sensors or further improving the model, is necessary to enhance real-time performance.
+Author: WhiteTrafficLight
+Last modified: 23.02.2025
+"""
+
 import os
 import torch
 import time

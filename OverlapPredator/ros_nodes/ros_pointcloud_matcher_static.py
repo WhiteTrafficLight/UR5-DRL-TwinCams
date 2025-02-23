@@ -1,3 +1,24 @@
+"""
+This script is designed for a fixed camera setup. At program startup, it calculates the 
+transformation matrix between the two RGB-D cameras just once, eliminating the need for 
+separate calibration of their relative positions. The computed transformation is then 
+reused for all subsequent point cloud processing.
+
+Note: This script should only be used when both cameras remain stationary.
+
+Potential Optimization Considerations:
+- Minimize data conversion overhead: Try to reduce repeated conversions between ROS messages, 
+  NumPy arrays, and Open3D point clouds.
+- Batch processing: If multiple point clouds need processing, consider batch operations to 
+  leverage vectorized computations.
+- Profile code execution: Use tools like cProfile to identify and optimize bottlenecks.
+- GPU data management: Ensure efficient data transfer to and from the GPU during model inference.
+- Parallel processing: Explore threading or asynchronous I/O for data acquisition if needed.
+
+Author: WhiteTrafficLight
+Last modified: 23.02.2025
+"""
+
 import os
 import torch
 import time

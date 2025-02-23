@@ -1,3 +1,17 @@
+"""
+[Experimental Code - Point Cloud Registration Demo]
+
+This script subscribes to two ROS topics ("/camera/depth/points" and "/camera2/depth/points")
+to receive point cloud data from two cameras, filters the data based on a specified maximum distance,
+and saves the processed point clouds as .ply files in the "assets" directory. It was originally written
+to test whether the Predator model could register point clouds from two camera setups effectively.
+Note that this script is experimental and is not used in our final experiments.
+Keep this code for reference and further investigation if needed.
+
+Author: WhiteTrafficLight
+Last modified: 23.02.2025
+"""
+
 import rospy
 import ros_numpy
 from sensor_msgs.msg import PointCloud2

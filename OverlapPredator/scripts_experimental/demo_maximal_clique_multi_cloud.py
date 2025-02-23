@@ -4,6 +4,15 @@ Scripts for pairwise registration demo
 Author: Shengyu Huang
 Last modified: 22.02.2021
 """
+"""
+demo_maximal_clique_multiple_clouds.py - Multiple clouds version
+
+This script is a modified version of demo_maximal_clique.py for merging multiple point clouds using maximal clique-based registration.
+For detailed information, please refer to the original code comments in demo_maximal_clique.py.
+
+Modified by WhiteTrafficLight.
+Last modified: 23.02.2025
+"""
 import os, torch, time, shutil, json,glob,sys,copy, argparse
 import numpy as np
 import igraph
@@ -529,6 +538,8 @@ if __name__ == '__main__':
 
     # load pretrained weights
     assert config.pretrain != None
+    
+    # To toggle cpu and gpu please toggle the following two lines
     #state = torch.load(config.pretrain)
     state = torch.load(config.pretrain, map_location=torch.device('cpu'))
 

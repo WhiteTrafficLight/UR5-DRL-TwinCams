@@ -1,3 +1,19 @@
+"""
+This script was developed to experiment with our own generated point clouds. 
+It loads a point cloud file ("assets/park1.ply"), splits it into multiple overlapping fragments 
+based on a specified grid size and overlap ratio, and then saves each fragment as a separate file.
+The purpose is to test our model's performance on registration using these smaller fragments.
+ 
+Usage:
+    Run this script to generate fragment files (e.g., fragment_1.ply, fragment_2.ply, ...) for further experiments.
+    
+Note:
+    Adjust grid size and overlap ratio as needed.
+    
+Author: WhiteTrafficLight
+Last modified: 23.02.2025    
+"""
+
 import open3d as o3d
 import numpy as np
 
@@ -41,10 +57,8 @@ def split_point_cloud_for_registration(pcd, grid_size, overlap_ratio):
 
 # Main program
 if __name__ == "__main__":
-    print("나온다")
     pcd = load_point_cloud("assets/park1.ply")
     # Define grid size (number of fragments in x, y, z) and overlap ratio
     fragments = split_point_cloud_for_registration(pcd, (2, 2, 2), 0.2)
-    print("나온다")
     for index, fragment in enumerate(fragments):
         save_point_cloud(fragment, f"fragment_{index+1}.ply")

@@ -1,9 +1,30 @@
 """
-Scripts for pairwise registration demo
+[Experimental Code - Maximal Clique Based Point Cloud Registration]
 
-Author: Shengyu Huang
-Last modified: 22.02.2021
+This script is an experimental modification that integrates elements from the original scripts/demo.py 
+by Shengyu Huang and the maximal clique-based point cloud registration code by Zhang Xiyu and colleagues.
+Modifications and integration have been performed by WhiteTrafficLight to adapt the code for our 
+experimental setup. The goal is to enhance the performance of the Predator model by leveraging 
+maximal clique information for improved registration in low-overlap scenarios.
+
+Notably, while the Predator model suffers from performance degradation on CPU, our experiments 
+have shown that the maximal clique approach works well even on CPU, offering a promising alternative 
+for systems with limited GPU resources.
+
+References:
+    - Zhang, Xiyu, Yang, Jiaqi, Zhang, Shikun, & Zhang, Yanning. "3D Registration with Maximal Cliques." 
+      In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 17745–17754, 2023.
+    - Yang, Jiaqi, Zhang, Xiyu, Wang, Peng, Guo, Yulan, Sun, Kun, Wu, Qiao, Zhang, Shikun, & Zhang, Yanning. 
+      "MAC: Maximal Cliques for 3D Registration." IEEE Transactions on Pattern Analysis and Machine Intelligence, 2024.
+
+Note:
+    This code is provided for experimental purposes only. Please refer to the above references for details 
+    on the original implementations.
+    
+Modified by WhiteTrafficLight.
+Last modified: 23.02.2025    
 """
+
 import os, torch, time, shutil, json,glob,sys,copy, argparse
 import numpy as np
 import igraph
@@ -50,20 +71,20 @@ class ThreeDMatchDemo(Dataset):
 
     def __getitem__(self,item): 
         # get pointcloud
-        #src_pcd = torch.load(self.src_path).astype(np.float32)
-        #tgt_pcd = torch.load(self.tgt_path).astype(np.float32)   
+        src_pcd = torch.load(self.src_path).astype(np.float32)
+        tgt_pcd = torch.load(self.tgt_path).astype(np.float32)   
         
         
-        
-        #src_pcd = src_pcd.voxel_down_sample(0.025)
-        #tgt_pcd = tgt_pcd.voxel_down_sample(0.025)
+        #src_pcd = o3d.io.read_point_cloud(self.src_path)
+        #tgt_pcd = o3d.io.read_point_cloud(self.tgt_path)
+        #src_pcd = src_pcd.voxel_down_sample(1)
+        #tgt_pcd = tgt_pcd.voxel_down_sample(1)
         #src_pcd = np.array(src_pcd.points).astype(np.float32)
         #tgt_pcd = np.array(tgt_pcd.points).astype(np.float32)
         #print("src_pcd:",np.shape(src_pcd))
         #print("tgt_pcd:",np.shape(tgt_pcd))
 
-        src_pcd = self.src_path
-        tgt_pcd = self.tgt_path
+
 
         src_feats=np.ones_like(src_pcd[:,:1]).astype(np.float32)
         tgt_feats=np.ones_like(tgt_pcd[:,:1]).astype(np.float32)
@@ -201,7 +222,7 @@ def visualization(src_pcd, tgt_pcd, pred_trans):
     o3d.visualization.draw_geometries([src_pcd, tgt_pcd])
 
 
-def transformation_Matrix_MAC(corr_data):
+def transformation_Matrix_MAC(corr_data,GTmat):
     #corr_path = folder + '/corr_data.txt'
     #GTmat_path = folder + '/GTmat.txt'
     #src_pcd_path = folder + '/source.ply'
@@ -350,72 +371,93 @@ def calculate_relative_transformation(src_path, tgt_path):
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
-    
-def generate_unique_colors(n):
-    np.random.seed(42)  # Seed for reproducibility
-    colors = np.random.rand(n, 3)
-    return colors.tolist()    
-    
-def draw_registration_result(pcds, tsfms, base_pcd=None):
+
+
+def draw_registration_result(src_raw, tgt_raw, src_overlap, tgt_overlap, src_saliency, tgt_saliency, tsfm, tsfm_gt):
     ########################################
     # 1. input point cloud
-    o3d_pcds = [to_o3d_pcd(pcd) for pcd in pcds]
-    o3d_pcds_after = copy.deepcopy(o3d_pcds)
-    for pcd, tsfm in zip(o3d_pcds_after, tsfms):
-        pcd.transform(tsfm)
-    
-    colors = generate_unique_colors(len(o3d_pcds))
+    src_pcd_before = to_o3d_pcd(src_raw)
+    tgt_pcd_before = to_o3d_pcd(tgt_raw)
+    print(src_pcd_before)
+    print(type(src_pcd_before))
+    src_pcd_before.paint_uniform_color(get_yellow())
+    tgt_pcd_before.paint_uniform_color(get_blue())
+    src_pcd_before.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.3, max_nn=50))
+    tgt_pcd_before.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.3, max_nn=50))
 
-    # Apply each color to the corresponding point cloud
-    for pcd, color in zip(o3d_pcds, colors):
-        pcd.paint_uniform_color(color)
-        pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.3, max_nn=50))
-        
-    for pcd, color in zip(o3d_pcds_after, colors):
-        pcd.paint_uniform_color(color)
-        pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.3, max_nn=50))    
-   
-    rots, transs = [to_tensor(tsfm[:3,:3]) for tsfm in tsfms], [to_tensor(tsfm[:3,3][:,None]) for tsfm in tsfms]
+    ########################################
+    # 2. overlap colors
+    rot, trans = to_tensor(tsfm[:3,:3]), to_tensor(tsfm[:3,3][:,None])
+    src_overlap = src_overlap[:,None].repeat(1,3).numpy()
+    tgt_overlap = tgt_overlap[:,None].repeat(1,3).numpy()
+    src_overlap_color = lighter(get_yellow(), 1 - src_overlap)
+    tgt_overlap_color = lighter(get_blue(), 1 - tgt_overlap)
+    src_pcd_overlap = copy.deepcopy(src_pcd_before)
+    src_pcd_overlap.transform(tsfm)
+    tgt_pcd_overlap = copy.deepcopy(tgt_pcd_before)
+    src_pcd_overlap.colors = o3d.utility.Vector3dVector(src_overlap_color)
+    tgt_pcd_overlap.colors = o3d.utility.Vector3dVector(tgt_overlap_color)
+
+    ########################################
+    # 3. draw registrations
+    src_pcd_after = copy.deepcopy(src_pcd_before)
+    src_pcd_after.transform(tsfm)
     
+    src_pcd_after_gt = copy.deepcopy(src_pcd_before)
+    src_pcd_after_gt.transform(tsfm_gt)
+    tgt_pcd_before_gt = copy.deepcopy(tgt_pcd_before)
+
     vis1 = o3d.visualization.Visualizer()
     vis1.create_window(window_name='Input', width=960, height=540, left=0, top=0)
-    for pcd in o3d_pcds:
-        vis1.add_geometry(pcd)
-        
+    vis1.add_geometry(src_pcd_before)
+    vis1.add_geometry(tgt_pcd_before)
+
     vis2 = o3d.visualization.Visualizer()
-    vis2.create_window(window_name='Registration Result', width=960, height=540, left=0, top=600)
-    for pcd in o3d_pcds_after:
-        vis2.add_geometry(pcd)
-        
+    vis2.create_window(window_name='Inferred overlap region', width=960, height=540, left=0, top=600)
+    vis2.add_geometry(src_pcd_overlap)
+    vis2.add_geometry(tgt_pcd_overlap)
+
     vis3 = o3d.visualization.Visualizer()
-    vis3.create_window(window_name='Final Result with Downsample', width=960, height=540, left=960, top=0)
-    base_pcd_downsampled = copy.deepcopy(base_pcd)
-    base_pcd_downsampled = to_o3d_pcd(base_pcd).voxel_down_sample(0.025)
-    vis3.add_geometry(base_pcd_downsampled)    
-        
+    vis3.create_window(window_name ='Our registration', width=960, height=540, left=960, top=0)
+    vis3.add_geometry(src_pcd_after)
+    vis3.add_geometry(tgt_pcd_before)
+    
+    vis4 = o3d.visualization.Visualizer()
+    vis4.create_window(window_name ='ground truth', width=960, height=540, left=960, top=600)
+    vis4.add_geometry(src_pcd_after_gt)
+    vis4.add_geometry(tgt_pcd_before_gt)
+    
     while True:
-        for pcd in o3d_pcds:
-            vis1.update_geometry(pcd)
+        vis1.update_geometry(src_pcd_before)
+        vis1.update_geometry(tgt_pcd_before)
         if not vis1.poll_events():
             break
         vis1.update_renderer()
 
-        for pcd in o3d_pcds_after:
-            vis2.update_geometry(pcd)
+        vis2.update_geometry(src_pcd_overlap)
+        vis2.update_geometry(tgt_pcd_overlap)
         if not vis2.poll_events():
             break
         vis2.update_renderer()
-        
-        vis3.update_geometry(base_pcd_downsampled)
+
+        vis3.update_geometry(src_pcd_after)
+        vis3.update_geometry(tgt_pcd_before)
         if not vis3.poll_events():
             break
         vis3.update_renderer()
-   
+        
+        vis4.update_geometry(src_pcd_after_gt)
+        vis4.update_geometry(tgt_pcd_before)
+        if not vis4.poll_events():
+            break
+        vis4.update_renderer()
+
     vis1.destroy_window()
-    vis2.destroy_window()     
+    vis2.destroy_window()
+    vis3.destroy_window()    
 
 
-def calculate_tsfm(config, demo_loader):
+def main(config, demo_loader):
     config.model.eval()
     c_loader_iter = demo_loader.__iter__()
     with torch.no_grad():
@@ -427,11 +469,11 @@ def calculate_tsfm(config, demo_loader):
                 inputs[k] = [item.to(config.device) for item in v]
             else:
                 inputs[k] = v.to(config.device)
-
         ###############################################
         # forward pass
         feats, scores_overlap, scores_saliency = config.model(inputs)  #[N1, C1], [N2, C2]
         pcd = inputs['points'][0]
+        print(type(pcd))
         len_src = inputs['stack_lengths'][0][0]
         c_rot, c_trans = inputs['rot'], inputs['trans']
         correspondence = inputs['correspondences']
@@ -480,9 +522,10 @@ def calculate_tsfm(config, demo_loader):
 
         # Concatenate the source and target points to form correspondences
         corr_data = np.hstack((matched_src_pcd, matched_tgt_pcd))
-        tsfm = transformation_Matrix_MAC(corr_data)
-        
-        return tsfm
+        tsfm_gt = calculate_relative_transformation(config.src_pcd_trs,config.tgt_pcd_trs)
+        tsfm_gt = torch.from_numpy(tsfm_gt).float().clone()
+        tsfm = transformation_Matrix_MAC(corr_data,tsfm_gt)
+        draw_registration_result(src_raw, tgt_raw, src_overlap, tgt_overlap, src_saliency, tgt_saliency, tsfm,tsfm_gt)
 
 
 if __name__ == '__main__':
@@ -514,58 +557,30 @@ if __name__ == '__main__':
     config.architecture.append('last_unary')
     config.model = KPFCNN(config).to(config.device)
     
-    
-    
-    
     # create dataset and dataloader
     info_train = load_obj(config.train_info)
     train_set = IndoorDataset(info_train,config,data_augmentation=True)
+    demo_set = ThreeDMatchDemo(config, config.src_pcd, config.tgt_pcd)
 
     _, neighborhood_limits = get_dataloader(dataset=train_set,
                                         batch_size=config.batch_size,
                                         shuffle=True,
                                         num_workers=config.num_workers,
                                         )
-
-    # load pretrained weights
-    assert config.pretrain != None
-    #state = torch.load(config.pretrain)
-    state = torch.load(config.pretrain, map_location=torch.device('cpu'))
-
-    config.model.load_state_dict(state['state_dict'])
-    
-    base_pcd = config.pcds[0]
-    base_pcd = o3d.io.read_point_cloud(base_pcd)
-    base_pcd = base_pcd.voxel_down_sample(0.025)
-    base_pcd = np.array(base_pcd.points).astype(np.float32)
-    tsfms = []
-    tsfm_first = np.eye(4)
-    tsfms.append(tsfm_first)
-    pcds = [torch.from_numpy(np.array(o3d.io.read_point_cloud(pcd).points).astype(np.float32)) for pcd in config.pcds]
-    
-    for i,pcd in enumerate(config.pcds) :
-        if i == 0:  # Check if the index is 0
-            continue
-        src_pcd = o3d.io.read_point_cloud(pcd)
-        src_pcd = src_pcd.voxel_down_sample(0.025)
-        src_pcd = np.array(src_pcd.points).astype(np.float32)
-        demo_set = ThreeDMatchDemo(config, src_pcd, base_pcd)
-        demo_loader, _ = get_dataloader(dataset=demo_set,
+    demo_loader, _ = get_dataloader(dataset=demo_set,
                                         batch_size=config.batch_size,
                                         shuffle=False,
                                         num_workers=1,
                                         neighborhood_limits=neighborhood_limits)
-        tsfm = calculate_tsfm(config,demo_loader)    
-        tsfms.append(tsfm)
-        src_pcd_after = copy.deepcopy(src_pcd)
-        #src_pcd_after = src_pcd_after.transform(tsfm)
-        src_pcd_after = to_o3d_pcd(src_pcd_after).transform(tsfm)
-        src_pcd_np = np.asarray(src_pcd_after.points).astype(np.float32)
-        base_pcd = np.concatenate((base_pcd,src_pcd_np))
-        base_pcd = to_o3d_pcd(base_pcd).voxel_down_sample(0.025)
-        base_pcd = np.asarray(base_pcd.points).astype(np.float32)
+
+    # load pretrained weights
+    assert config.pretrain != None
     
-    draw_registration_result(pcds,tsfms,base_pcd)
-    output_file = 'assets/output_file.ply'
-    o3d.io.write_point_cloud(output_file, to_o3d_pcd(base_pcd))
-        
+    # To toggle cpu and gpu please toggle the following two lines
+    #state = torch.load(config.pretrain)
+    state = torch.load(config.pretrain, map_location=torch.device('cpu'))
+
+    config.model.load_state_dict(state['state_dict'])
+
+    # do pose estimation
+    main(config, demo_loader)
