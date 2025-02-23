@@ -1,60 +1,100 @@
-# Modular DRL Gym Env for Robots with PyBullet (Customized Fork)
+# UR5-DRL-TwinCams
 
-This repository is a fork of the [original IR-DRL project](https://github.com/ignc-research/IR-DRL), customized to integrate additional features and adjustments, including point cloud registration using the [OverlapPredator](https://github.com/prs-eth/OverlapPredator) model. It also includes support for toggling between one and two cameras for real-world scenario experiments. The goal is to experiment with potential enhancements in path-planning by addressing calibration and occlusion issues. This is achieved by reconstructing a complete 3D map using multiple cameras and point cloud registration.
+This repository is based on [IR-DRL](https://github.com/ignc-research/IR-DRL) with minor modifications to integrate **dual RGB-D cameras** for improved path-planning using Deep Reinforcement Learning (DRL). The occlusion issue in single-camera setups is mitigated by adding a second **ASUS Xtion Pro** camera and aligning point clouds using **PREDATOR** (Point Cloud Registration model).
 
-<p float="left">
-  <img src="docs/gifs/SingleCamera.png" width="400" /><figcaption>(a) Point cloud from a single camera.</figcaption>
-  <img src="docs/gifs/DoubleCamera.png" width="400" /><figcaption>(b) Point cloud from dual cameras.</figcaption>
-</p>
+This repository was used in my **master's thesis**:
+> **"Deep Reinforcement Learning and Point Cloud Registration for Collision Avoidance and Path-Planning in Industrial Robotics"**  
+> 📄 **[Master's Thesis Link](#)** *(https://drive.google.com/file/d/1zJlFOs_0xcjcc7gajkvttXdFDhaQVWaQ/view)*  
+> 📄 **[Medium Blog Summary](#)** *(https://medium.com/@jhyu7703/deep-reinforcement-learning-and-point-cloud-registration-for-collision-avoidance-and-path-planning-92d8562158df)*  
 
----
+## 🏗️ Pipeline Overview
+![Pipeline Overview](path/to/pipeline_image.png)  
+*(Replace with actual image path)*  
 
-## Custom Modifications
-1. **Training Process Visualization**:
-   - Added an option in `run.py` to visualize the training process for observation.
-2. **Adjusted Robot Step Size**:
-   - Updated the step size of the robot end-effector in `/modular_drl_env/robot/robot.py` to improve successful training outcomes.
-3. **Reward System Updates**:
-   - Enhanced the reward system for better training performance.
-4. **Multiple Cameras and Point Cloud Registration**:
-   - Integrated variations in `IR-DRL/Sim2Real/move_DRL_main.py` to support:
-     - Multiple cameras for real-world scenarios.
-     - Real-time point cloud registration using the OverlapPredator model.
-5. **New Training Environment**:
-   - Added a custom training environment tailored for specific experiment cases.
+The pipeline consists of:
+- **DRL-based path-planning for UR5**  
+- **Voxel-based obstacle representation**  
+- **Point cloud fusion using PREDATOR**  
+- **Simulation in PyBullet & real-world execution via ROS1 Noetic**  
 
----
+## 📹 Demo Video
+▶️ **[YouTube Video](https://www.youtube.com/watch?v=y-R9BKT0rpw)** *(Replace with actual video link)*  
 
-## Overview
-This repository provides a robust platform for training virtual agents in robotics tasks using Deep Reinforcement Learning (DRL). It supports transitioning from simulation to real-world applications with modular components like goals, robots, and sensors.
+## 🔑 Key Modifications
+- **Dual-camera integration** to resolve occlusion in single-camera setups check OverlapPredator/ros_nodes directory.
+- **IK-solver-based agent design fine-tuning:** In the original setup, the agent’s **Δx, Δy, Δz** range was too small, leading the agent to optimize for reducing the shaking penalty rather than reaching the target. Expanding this range resolved the issue.
+- **Sim2Real/move_DRL_main.py** adapted for dual-camera experiments.
+- **BiRRT-based dynamic sampling path-planning attempt**, but proved ineffective.
 
-### Key Features
-- **Deep Point Cloud Registration**: Integrates OverlapPredator for real-time point cloud processing.
-- **Modular Environment**: Easily customizable for various tasks, including training robots to handle static and dynamic obstacles.
-- **Sim-to-Real Transition**: Uses ROS and Open3D for deployment in real-world environments.
-- **Path-Planning Enhancements**: Experiments with multiple cameras to address calibration and occlusion issues, reconstructing a complete 3D map for better path-planning.
+> **Note:** The core DRL training framework remains **mostly unchanged** from the original IR-DRL repository. The primary modifications lie in **data preprocessing (point cloud alignment)** and **integration of OverlapPredator** for better real-world adaptability. Reference to OverlapPredator/scripts/experimental for the experimental code
 
----
+## 🚀 Installation
+This project runs on **ROS1 Noetic** with the following dependencies:
 
-## Getting Started
+1. Install **ROS1 Noetic** (Ubuntu 20.04)  
+   ```bash
+   sudo apt install ros-noetic-desktop-full
+   ```
+2. Clone the repository:  
+   ```bash
+   git clone https://github.com/WhiteTrafficLight/UR5-DRL-TwinCams.git
+   cd UR5-DRL-TwinCams
+   ```
+3. Install dependencies via Conda:  
+   ```bash
+   conda env create -f DRL.yml
+   conda activate DRL
+   ```
+4. Install additional ROS packages:  
+   ```bash
+   sudo apt install ros-noetic-openni2-camera ros-noetic-universal-robot
+   ```
+5. Ensure you have **two ASUS Xtion Pro cameras** connected.
 
-### Installation
-Follow the setup instructions from the original repository: [Setup](docs/SETUP.md).
+## 🎯 Usage
+### Dual-Camera Mode
+1. **Start ROS core**  
+   ```bash
+   roscore
+   ```
+2. **Launch UR5 Robot Drivers**  
+   ```bash
+   roslaunch ur_robot_driver ur5_bringup.launch
+   ```
+3. **Launch OpenNI2 Camera Drivers for both cameras
+   ```bash
+   roslaunch openni2_launch openni2.launch camera:=camera
+   roslaunch openni2_launch openni2.launch camera:=camera2
+   ```      
+4. **Run Point Cloud Matcher**  
+   ```bash
+   python OverlapPredator/ros_nodes/ros_pointcloud_matcher_static.py
+   ```
+5. **Run DRL-based Path-Planning**  
+   ```bash
+   python Sim2Real/move_DRL_main.py
+   ```
+   
+## 📜 Acknowledgments
+This repository is based on [IR-DRL](https://github.com/ignc-research/IR-DRL).  
+The PREDATOR model used for point cloud registration comes from [OverlapPredator](https://github.com/Overlapped-Predator).
 
-### Key Documentation
-- **Training and Evaluation**: Instructions for training and evaluating models are in [TRAINING.md](docs/TRAINING.md).
-- **Perception Pipeline**: Details on perception handling can be found in [Perception.md](docs/Perception/Perception.md).
-- **Deployment**: Guidelines for real-world deployment are in [Deployment.md](docs/Deployment.md).
+## 🔗 References
+- **[IR-DRL Original Repository](https://github.com/ignc-research/IR-DRL)**
+- **[OverlapPredator for Point Cloud Registration](https://github.com/Overlapped-Predator)**
+- **Predator Citation:**  
+  ```
+  @InProceedings{Huang_2021_CVPR,
+    author    = {Huang, Shengyu and Gojcic, Zan and Usvyatsov, Mikhail and Wieser, Andreas and Schindler, Konrad},
+    title     = {Predator: Registration of 3D Point Clouds With Low Overlap},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month     = {June},
+    year      = {2021},
+    pages     = {4267-4276}
+  }
+  ```
 
-### Additional Notes
-- Ensure that `OverlapPredator` is installed and properly configured for point cloud registration. Refer to [OverlapPredator Repository](https://github.com/prs-eth/OverlapPredator).
 
----
-
-## Acknowledgments
-This project is based on [IR-DRL](https://github.com/ignc-research/IR-DRL). Special thanks to the original authors for their contributions.
-
----
 
 
 
