@@ -74,6 +74,10 @@ This project runs on **ROS1 Noetic** with the following dependencies:
    ```bash
    python Sim2Real/move_DRL_main.py
    ```
+## 🔬 Experimental Code with Aria Glasses
+The repository also contains experimental scripts under the Aria/ directory for using Aria glasses to generate point clouds.
+However, due to real-time limitations, Aria glasses were found unsuitable for our final research pipeline.
+The scripts are left unorganized for potential future research in real-time point cloud processing.
    
 ## 📜 Acknowledgments
 This repository is based on [IR-DRL](https://github.com/ignc-research/IR-DRL).  
