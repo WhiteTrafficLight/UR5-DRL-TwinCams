@@ -75,8 +75,10 @@ This project runs on **ROS1 Noetic** with the following dependencies:
    python Sim2Real/move_DRL_main.py
    ```
 ## 🔬 Experimental Code with Aria Glasses
-The repository also contains experimental scripts under the Aria/ directory for using Aria glasses to generate point clouds.
-However, due to real-time limitations, Aria glasses were found unsuitable for our final research pipeline.
+The repository also contains experimental scripts under the Aria/ directory for using Aria glasses to generate point clouds in real-time.
+While they offer point cloud reconstruction after post-processing, there is no real-time point cloud creation functionality.
+Therefore we attempted to create point cloud using stereo-vision method and merge the point cloud directly to the point cloud from the fixed rgbd camera using the IMU Sensor attached in the Aria glasses.
+However, due to hardware limitations, Aria glasses were found unsuitable for our final research pipeline.
 The scripts are left unorganized for potential future research in real-time point cloud processing.
    
 ## 📜 Acknowledgments
