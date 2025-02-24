@@ -8,13 +8,13 @@ This repository was used in my **master's thesis**:
 > 📄 **[Medium Blog Summary](https://medium.com/@jhyu7703/deep-reinforcement-learning-and-point-cloud-registration-for-collision-avoidance-and-path-planning-92d8562158df)**
 
 ## 🏗️ Pipeline Overview
-![Pipeline Overview](path/to/pipeline_image.png)  
+![Pipeline Overview](images/pipeline_overview.png)  
 *(Replace with actual image path)*  
 
 The pipeline consists of:
 - **DRL-based path-planning for UR5**  
 - **Voxel-based obstacle representation**  
-- **Point cloud fusion using PREDATOR**  
+- **Point cloud registration from ASUS Xtion Pro RGBD cameras using PREDATOR**  
 - **Simulation in PyBullet & real-world execution via ROS1 Noetic**  
 
 ## 📹 Demo Video
